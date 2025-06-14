@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+from dotenv import load_dotenv
+load_dotenv()
 from pathlib import Path
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -69,9 +70,10 @@ EMAIL_HOST_PASSWORD = 'mjjj sybs oeqx vzxu' # your email password
 DEFAULT_FROM_EMAIL = 'mokhtar.jo21@gmail.com'
 ######################################################
 # SMS mangement #################################
-TWILIO_ACCOUNT_SID = 'ACd631bfa68dc6df9c485f0229b5486535'
-TWILIO_AUTH_TOKEN = '19dc6541c0365d0a04cae048061512f4'
-TWILIO_PHONE_NUMBER = '+12025550123' 
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER")
 # this filed is for api documentation
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
