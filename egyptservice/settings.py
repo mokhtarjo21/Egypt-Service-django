@@ -153,7 +153,9 @@ WSGI_APPLICATION = 'egyptservice.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(default=config('DATABASE_URL'))
+   'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='postgresql://postgres:NmnkKiizXOXOSksPkmvvapcBZlFvNzry@centerbeam.proxy.rlwy.net:11943/railway')
+    )
 
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
