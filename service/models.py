@@ -29,7 +29,7 @@ class Service(models.Model):
 
 class ServiceImage(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='service_images/')
+    image = models.ImageField()
     createdAt = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
