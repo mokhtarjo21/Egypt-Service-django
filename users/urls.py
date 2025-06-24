@@ -20,6 +20,7 @@ urlpatterns = [
     path('change-password/',userSaveInfo.as_view(), name='user_info'),
     path('update-profile/',update_profile, name='user_update_info'),
     path('all/', all_users.as_view(), name='all_users'),
-
+    path('send-otp-reset-pass/',sendotppassword.as_view(), name='sendforget'),
+    path('reset-password/',resetpassword.as_view(), name='resetpassword'),
   
 ]

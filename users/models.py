@@ -68,3 +68,8 @@ class cities(models.Model):
     
     def __str__(self):
         return self.city
+class User_reset_password(models.Model) :
+    user = models.ForeignKey(User ,on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    used=models.BooleanField(default=False)
+    time_send = models.DateTimeField(auto_now_add=True)

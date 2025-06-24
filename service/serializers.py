@@ -21,7 +21,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context['request']
-        images = request.FILES.getlist('images[]')  # <-- الصور هنا
+        images = request.FILES.getlist('images')  # <-- الصور هنا
         service = Service.objects.create(**validated_data)
 
         for image in images:

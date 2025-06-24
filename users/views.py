@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils.timezone import now 
 from django.contrib.auth.models import AnonymousUser
 from django.views import View
-from users.models import *
+from .models import *
 import random
 import string
 from django.http import QueryDict
@@ -18,7 +18,7 @@ from django.utils.decorators import method_decorator
 from .serializers import *
 from django.http import JsonResponse
 import json
-
+from django.core.cache import cache
 from rest_framework.decorators import api_view , permission_classes
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -98,7 +98,7 @@ class RegisterView(APIView):
             user = User.objects.get(phoneNumber=phoneNumber)
             activation_code = ''.join(random.choices(string.digits, k=6))
             User_active.objects.create(user=user, active=activation_code)
-            
+            cache.delete('users_list')  # Clear cache after user registration
             return Response({"message": "تم التسجيل بنجاح"}, status=201)
         return Response(serializer.errors, status=400)
        
@@ -177,7 +177,10 @@ class all_users(APIView):
             return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
         users = User.objects.all()
         serializer = CurrentUserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        users_data = serializer.data
+        cache.set('users_list', users_data, timeout=60 * 5)
+        
+        return Response(users_data, status=status.HTTP_200_OK)
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -285,3 +288,59 @@ class CurrentUserAPIView(APIView):
     def get(self, request):
         serializer = CurrentUserSerializer(request.user)
         return Response(serializer.data)
+class sendotppassword(APIView) :
+    def post(self,request):
+        phoneNumber= request.data.get('phoneNumber')
+        Newcode = ''.join(random.choices(string.digits, k=6))
+        existt = User.objects.filter(phoneNumber=phoneNumber).exists()
+        if existt :
+            user = User.objects.get(phoneNumber=phoneNumber)
+            if User_reset_password.objects.filter(user=user).exists() :
+                ocode =User_reset_password.objects.get(user=user)
+                if now() - ocode.time_send > timedelta(days=1) or ocode.used:
+                    ocode.code = Newcode
+                    ocode.time_send= now()
+                    ocode.save()
+            else:
+                User_reset_password.objects.create(user=user, code=Newcode)
+            getotp=User_reset_password.objects.get(user=user)
+            otp = getotp.code
+            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+            try :
+                message = client.messages.create(
+                body=f'رمز اعادة تعيين كلمة السر هو   : {otp}',    
+                from_='whatsapp:+14155238886',
+            
+                to=f'whatsapp:+2{phoneNumber}'
+                )
+                
+                return Response ({'message' : 'تم ارسال الرمز بنجاح'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                #return Response({'message': 'حدث خطأ أثناء إرسال الرمز'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'message':' تم إرسال . سوف يصل خلال يوم'}, status=status.HTTP_200_OK)
+
+            
+
+        else:
+            return Response ({'message': 'المستخدم غير موجود'}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+class resetpassword(APIView):
+    def post(self,request):
+        phoneNumber= request.data.get('phoneNumber')
+        code = request.data.get('otp')
+        newPassword = request.data.get('newPassword')
+        print("Phone Number:", phoneNumber)
+        print("Code:", code)
+        print("New Password:", newPassword)
+        user= User.objects.get(phoneNumber=phoneNumber)
+        code1 = User_reset_password.objects.get(user=user)
+        if code1.code == code and now() - code1.time_send < timedelta(days=1) and code1.used == False:
+            user.set_password(newPassword)
+            user.save()
+            code1.used = True
+            code1.save()
+            return Response({'message':'تم تغيير كلمة المرور بنجاح'},status=status.HTTP_200_OK)
+        else:
+            return Response({'message':'الكود غير صالح'},status=status.HTTP_400_BAD_REQUEST)
