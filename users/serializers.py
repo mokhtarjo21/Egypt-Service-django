@@ -3,6 +3,42 @@
 from rest_framework import serializers
 from .models import User, governorates, cities
 
+class UserSerializer(serializers.ModelSerializer):
+    governorates = serializers.SerializerMethodField()
+    centers = serializers.SerializerMethodField()
+    isAdmin = serializers.SerializerMethodField()
+    createdAt = serializers.DateTimeField(source='date_joined')
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'fullName',
+            'phoneNumber',
+            'serviceType',
+            'governorates',
+            'centers',
+            'bio',
+            'idPhotoUrl',
+            'idfPhotoUrl',
+            'iduserPhotoUrl',
+            'isVerified',
+            'isPhoneVerified',
+            'verificationStatus',
+            'isAdmin',
+            'isActive',
+            'createdAt',
+            'last_login',
+            
+        ]
+    def get_governorates(self, obj):
+        return [gov.governorate for gov in governorates.objects.filter(user=obj)]
+
+    def get_centers(self, obj):
+        return [city.city for city in cities.objects.filter(user=obj)]
+
+    def get_isAdmin(self, obj):
+        return obj.is_superuser
+
 class GovernorateSerializer(serializers.ModelSerializer):
     class Meta:
         model = governorates

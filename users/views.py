@@ -8,6 +8,10 @@ from django.contrib.auth.models import AnonymousUser
 from django.views import View
 from .models import *
 import random
+from rest_framework import generics, permissions, filters
+from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth import get_user_model
+from rest_framework.pagination import PageNumberPagination
 import string
 from django.http import QueryDict
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -18,6 +22,7 @@ from django.utils.decorators import method_decorator
 from .serializers import *
 from django.http import JsonResponse
 import json
+
 from django.core.cache import cache
 from rest_framework.decorators import api_view , permission_classes
 from rest_framework.views import APIView
@@ -25,14 +30,29 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework.pagination import PageNumberPagination
+from rest_framework import generics, filters
 
+
+class AdminUserPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+class AllUsersListView(generics.ListAPIView):
+    print("AllUsersListView")
+    queryset = User.objects.all().order_by('-id')
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]  # <-- change to AllowAny if public
+    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
+    search_fields = ['fullName', 'phoneNumber']
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
@@ -62,28 +82,7 @@ class check_email(APIView):
                 return Response({'user': '1'}, status=status.HTTP_200_OK)
 
         return Response({'user': '0'}, status=status.HTTP_200_OK)
-    
-class check_vendor(APIView):        
-    def post(self,request):
-        email = request.data.get('email')
-        print("Email:", email)
-        exists = User.objects.filter(email=email).exists()
-        if exists:
-            user = User.objects.get(email=email)
-            stuf = user.is_staff
-            print("Email:", email)
-            print("stuf:", stuf)
-            if stuf:
-                print
-                return Response({'user': '1'}, status=status.HTTP_200_OK)
-        return Response({'user': '0'}, status=status.HTTP_200_OK)
-    def get(self,request):
-        
-        vendor = request.user.is_staff
-        if vendor:
-            return Response({'user':'1'},status=status.HTTP_200_OK)
-        return Response({'user':'0'},status=status.HTTP_200_OK)
-
+  
 
        
 class RegisterView(APIView):

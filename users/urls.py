@@ -7,7 +7,6 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     
     path('check_email', check_email.as_view(), name='check_email'),
-    path('check_vendor', check_vendor.as_view(), name='check_vendor'),
     path('register/', RegisterView.as_view(), name='register'),
     path('logout', LogoutView.as_view(), name='logout'),
     path ('verify-phone/', ActivationView.as_view(), name='activate'),
@@ -20,6 +19,7 @@ urlpatterns = [
     path('change-password/',userSaveInfo.as_view(), name='user_info'),
     path('update-profile/',update_profile, name='user_update_info'),
     path('all/', all_users.as_view(), name='all_users'),
+    path('list/', AllUsersListView.as_view(), name='all_users_list'),
     path('send-otp-reset-pass/',sendotppassword.as_view(), name='sendforget'),
     path('reset-password/',resetpassword.as_view(), name='resetpassword'),
   
