@@ -19,11 +19,11 @@ class BookingListSerializer(serializers.ModelSerializer):
     service_title = serializers.CharField(source='service.title_ar', read_only=True)
     service_title_en = serializers.CharField(source='service.title_en', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    
+    image = serializers.CharField(source='service.primary_image.image', read_only=True)
     class Meta:
         model = Booking
         fields = [
-            'id', 'booking_number', 'customer_name', 'provider_name',
+            'id', 'image','booking_number', 'customer_name', 'provider_name',
             'service_title', 'service_title_en', 'status', 'status_display',
             'scheduled_date', 'scheduled_end_date', 'total_amount',
             'is_paid', 'created_at', 'is_active'

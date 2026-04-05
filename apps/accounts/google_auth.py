@@ -8,27 +8,43 @@ logger = logging.getLogger(__name__)
 
 def verify_google_token(token: str) -> dict:
     """
-    Verifies a Google ID token and returns the decoded payload.
+    Verifies a Google ID token or an access token and returns the decoded payload.
     Raises ValueError if the token is invalid or expired.
     """
     try:
-        # Specify the CLIENT_ID of the app that accesses the backend:
-        client_id = getattr(settings, 'GOOGLE_OAUTH2_CLIENT_ID', None)
-        
-        if not client_id:
-            logger.error("GOOGLE_OAUTH2_CLIENT_ID is not set in Django settings")
-            raise ValueError(_("Server authentication configuration error"))
+        # Check if token is a JWT (has 3 parts separated by dots)
+        if len(token.split('.')) == 3:
+            # Specify the CLIENT_ID of the app that accesses the backend:
+            client_id = getattr(settings, 'GOOGLE_OAUTH2_CLIENT_ID', None)
+            
+            if not client_id:
+                logger.error("GOOGLE_OAUTH2_CLIENT_ID is not set in Django settings")
+                raise ValueError(_("Server authentication configuration error"))
 
-        idinfo = id_token.verify_oauth2_token(
-            token, 
-            requests.Request(), 
-            client_id
-        )
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                requests.Request(), 
+                client_id
+            )
+            return idinfo
+        else:
+            # It's likely an access_token, verify via userinfo endpoint
+            import requests as req
+            response = req.get(
+                'https://www.googleapis.com/oauth2/v3/userinfo',
+                headers={'Authorization': f'Bearer {token}'}
+            )
+            if response.status_code != 200:
+                logger.warning(f"Failed to verify access_token: {response.text}")
+                raise ValueError(_("Invalid Google token"))
+                
+            idinfo = response.json()
+            # Ensure it has email
+            if 'email' not in idinfo:
+                raise ValueError(_("Email not provided by Google"))
+                
+            return idinfo
 
-        # Or, if multiple clients access the backend server:
-        # idinfo = id_token.verify_oauth2_token(token, requests.Request())
-        # if idinfo['aud'] not in [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]:
-        #     raise ValueError('Could not verify audience.')
 
         # If auth request is from a G Suite domain:
         # if idinfo['hd'] != GSUITE_DOMAIN_NAME:
